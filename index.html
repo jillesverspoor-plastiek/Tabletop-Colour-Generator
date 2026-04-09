@@ -270,6 +270,19 @@
       border-radius: 8px;
       padding: 12px 14px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .stats-card-table-counts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      margin-top: 8px;
+    }
+    .stats-card-table-counts span {
+      font-size: 0.72rem;
+      color: #888;
+      white-space: nowrap;
     }
     .stats-card-title {
       font-size: 0.72rem;
@@ -829,10 +842,10 @@ function renderResults(tables, colors, sizeAName, sizeBName) {
         <div style="font-size:0.78rem;color:#666;margin-top:4px;">
           ${total} beams &nbsp;·&nbsp; ${sizeAName}: <strong>${cntA}</strong> &nbsp;·&nbsp; ${sizeBName}: <strong>${cntB}</strong>
         </div>
-        <div style="margin-top:8px;">
+        <div class="stats-card-table-counts">
           ${tables.map(t => {
             const cnt = t.beams.filter(b => b.colorId === c.id).length;
-            return `<span style="font-size:0.72rem;color:#888;">T${t.id}:&nbsp;<strong style="color:#333;">${cnt}</strong>&nbsp;&nbsp;</span>`;
+            return `<span>T${t.id}:&nbsp;<strong style="color:#333;">${cnt}</strong></span>`;
           }).join('')}
         </div>
       </div>
