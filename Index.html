@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table Top Color Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f0ee;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #2c2c2c;
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.05em; }
+    header span { font-size: 0.8rem; color: #999; }
+
+    #layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: calc(100vh - 53px);
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .field label { font-size: 0.82rem; color: #555; }
+    .field input[type=number], .field input[type=text] {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: #666; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Colors list */
+    #color-list { display: flex; flex-direction: column; gap: 6px; }
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f7f7f7;
+      border-radius: 7px;
+      padding: 5px 8px;
+    }
+    .color-row input[type=color] {
+      width: 32px; height: 28px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 1px;
+      background: none;
+    }
+    .color-row input[type=text] {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+    .color-row input[type=text]:focus { border-color: #999; }
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #bbb;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.1s, background 0.1s;
+    }
+    .btn-icon:hover { color: #c0392b; background: #fde8e8; }
+
+    #btn-add-color {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1.5px dashed #ccc;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      color: #888;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #btn-add-color:hover { border-color: #888; color: #444; }
+
+    #btn-generate {
+      background: #2c2c2c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.15s;
+      margin-top: auto;
+    }
+    #btn-generate:hover { background: #444; }
+    #btn-generate:active { background: #111; }
+
+    /* ── MAIN ── */
+    #main {
+      padding: 24px 28px;
+      overflow-y: auto;
+    }
+
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #bbb;
+      gap: 10px;
+      text-align: center;
+    }
+    #empty-state svg { opacity: 0.35; }
+    #empty-state p { font-size: 0.9rem; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .results-header h2 { font-size: 1rem; font-weight: 600; }
+
+    .top-actions { display: flex; gap: 8px; }
+    .btn-sm {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #444;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn-sm:hover { background: #f5f5f5; border-color: #999; }
+
+    /* Tables display */
+    .tables-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .table-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .table-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .table-label { font-size: 0.85rem; font-weight: 600; color: #444; }
+    .table-stats { display: flex; gap: 8px; }
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #f3f3f3;
+      color: #666;
+    }
+    .stat-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .table-visual {
+      padding: 16px;
+    }
+    .beam-row {
+      display: flex;
+      gap: 2px;
+      height: 64px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .beam {
+      flex-shrink: 0;
+      border-radius: 2px;
+      transition: opacity 0.1s;
+      cursor: default;
+      position: relative;
+    }
+    .beam:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 0.7rem;
+      white-space: nowrap;
+      padding: 3px 7px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Stats section */
+    #stats-section {
+      margin-top: 28px;
+    }
+    #stats-section h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .stats-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+    .stats-card-title {
+      font-size: 0.72rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .color-stat-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+    .color-stat-swatch {
+      width: 12px; height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .color-stat-name { font-size: 0.78rem; color: #555; flex: 1; }
+    .color-stat-count {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #333;
+      min-width: 24px;
+      text-align: right;
+    }
+    .color-stat-bar-bg {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+    .color-stat-bar {
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    /* Overview table */
+    .overview-block { margin-top: 28px; }
+    .overview-block h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    .overview-wrap {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .overview-size-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      flex: 1;
+      min-width: 300px;
+    }
+    .overview-size-title {
+      padding: 9px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #f7f7f7;
+      border-bottom: 1px solid #eee;
+      color: #555;
+    }
+    .ov-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .ov-table th, .ov-table td {
+      padding: 6px 10px;
+      text-align: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .ov-table th {
+      background: #fafafa;
+      font-weight: 600;
+      color: #666;
+      font-size: 0.72rem;
+    }
+    .ov-table th.color-col { text-align: left; min-width: 90px; }
+    .ov-table td.color-col {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ov-swatch {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    .ov-table tr:last-child td { border-bottom: none; }
+    .ov-table td.total-col {
+      font-weight: 700;
+      color: #333;
+      background: #fafafa;
+    }
+    .ov-table tr.total-row td {
+      font-weight: 700;
+      color: #333;
+      background: #f5f5f5;
+      border-top: 2px solid #e0e0e0;
+    }
+    .ov-bar-cell { min-width: 60px; }
+    .ov-mini-bar-bg {
+      height: 5px;
+      background: #eee;
+      border-radius: 3px;
+      margin-top: 3px;
+    }
+    .ov-mini-bar { height: 5px; border-radius: 3px; }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: #666;
+    }
+    .legend-beam {
+      height: 14px;
+      border-radius: 2px;
+    }
+
+    @media print {
+      #sidebar { display: none; }
+      #layout { grid-template-columns: 1fr; }
+      .top-actions { display: none; }
+      body { background: white; }
+
+      /* Force browsers to print background colours */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Prevent cards/rows from splitting across pages */
+      .table-card { break-inside: avoid; }
+      .overview-size-card { break-inside: avoid; }
+      .stats-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Table Top Color Generator</h1>
+  <span>Beam pattern planner</span>
+</header>
+
+<div id="layout">
+  <div id="sidebar">
+
+    <div>
+      <div class="section-title">Tables</div>
+      <div class="field">
+        <label>Number of tables</label>
+        <input type="number" id="inp-tables" value="4" min="1" max="30">
+      </div>
+      <div class="field">
+        <label>Beams per table</label>
+        <input type="number" id="inp-beams" value="14" min="2" max="80">
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Beam Sizes</div>
+      <div class="row2">
+        <div class="field">
+          <label>Size A (wide)</label>
+          <input type="text" id="inp-size-a" value="Wide">
+        </div>
+        <div class="field">
+          <label>Size B (narrow)</label>
+          <input type="text" id="inp-size-b" value="Narrow">
+        </div>
+      </div>
+      <p style="font-size:0.75rem;color:#999;">Sizes alternate: A, B, A, B…</p>
+    </div>
+
+    <div>
+      <div class="section-title">Colors</div>
+      <div id="color-list"></div>
+      <button id="btn-add-color" onclick="addColor()">
+        <span style="font-size:1.1rem;">+</span> Add color
+      </button>
+    </div>
+
+    <button id="btn-generate" onclick="generate()">Generate Pattern</button>
+
+  </div>
+
+  <div id="main">
+    <div id="empty-state">
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+        <rect x="8" y="20" width="10" height="32" rx="2" fill="#ccc"/>
+        <rect x="20" y="20" width="6"  height="32" rx="2" fill="#aaa"/>
+        <rect x="28" y="20" width="10" height="32" rx="2" fill="#ccc"/>
+        <rect x="40" y="20" width="6"  height="32" rx="2" fill="#aaa"/>
+        <rect x="48" y="20" width="10" height="32" rx="2" fill="#ccc"/>
+        <rect x="60" y="20" width="6"  height="32" rx="2" fill="#aaa"/>
+      </svg>
+      <p>Configure parameters and click<br><strong>Generate Pattern</strong></p>
+    </div>
+    <div id="results" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let colorIdCounter = 1;
+const defaultColors = [
+  { hex: '#C8A46A', name: 'Oak' },
+  { hex: '#5C3317', name: 'Walnut' },
+  { hex: '#F0D080', name: 'Pine' },
+  { hex: '#E8E0D5', name: 'White' },
+  { hex: '#607080', name: 'Slate' },
+];
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function init() {
+  defaultColors.forEach(c => addColor(c.hex, c.name));
+}
+
+// ── Color management ───────────────────────────────────────────────────────
+function addColor(hex, name) {
+  hex  = hex  || randomHex();
+  name = name || '';
+  const id = colorIdCounter++;
+
+  const list = document.getElementById('color-list');
+  const row  = document.createElement('div');
+  row.className = 'color-row';
+  row.dataset.id = id;
+  row.innerHTML = `
+    <input type="color" value="${hex}" oninput="updateColorHex(${id}, this.value)">
+    <input type="text" value="${name}" placeholder="Name (optional)"
+           oninput="updateColorName(${id}, this.value)">
+    <button class="btn-icon" onclick="removeColor(${id})" title="Remove">×</button>
+  `;
+  list.appendChild(row);
+}
+
+function removeColor(id) {
+  const rows = document.querySelectorAll('#color-list .color-row');
+  if (rows.length <= 2) { alert('Keep at least 2 colors.'); return; }
+  document.querySelector(`.color-row[data-id="${id}"]`)?.remove();
+}
+
+function updateColorHex(id, hex) { /* value lives in DOM */ }
+function updateColorName(id, name) { /* value lives in DOM */ }
+
+function getColors() {
+  return [...document.querySelectorAll('#color-list .color-row')].map(row => ({
+    id:   +row.dataset.id,
+    hex:  row.querySelector('input[type=color]').value,
+    name: row.querySelector('input[type=text]').value.trim() || row.querySelector('input[type=color]').value,
+  }));
+}
+
+function randomHex() {
+  const h = Math.floor(Math.random() * 360);
+  return hslToHex(h, 40, 55);
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1-l);
+  const f = n => {
+    const k = (n + h/30) % 12;
+    const c = l - a * Math.max(-1, Math.min(k-3, 9-k, 1));
+    return Math.round(255*c).toString(16).padStart(2,'0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// ── Generation ─────────────────────────────────────────────────────────────
+function generate() {
+  const numTables    = Math.max(1,  Math.min(30,  +document.getElementById('inp-tables').value || 4));
+  const beamsPerTable= Math.max(2,  Math.min(80,  +document.getElementById('inp-beams').value  || 14));
+  const sizeAName    = document.getElementById('inp-size-a').value.trim() || 'Wide';
+  const sizeBName    = document.getElementById('inp-size-b').value.trim() || 'Narrow';
+  const colors       = getColors();
+
+  if (colors.length < 2) { alert('Please add at least 2 colors.'); return; }
+
+  // Global usage counters: colorId → { A: count, B: count }
+  const globalUsage = {};
+  colors.forEach(c => { globalUsage[c.id] = { A: 0, B: 0 }; });
+
+  const tables = [];
+
+  for (let t = 0; t < numTables; t++) {
+    const beams = [];
+    const localUsage = {};
+    colors.forEach(c => { localUsage[c.id] = { A: 0, B: 0 }; });
+
+    for (let i = 0; i < beamsPerTable; i++) {
+      const sz  = i % 2 === 0 ? 'A' : 'B';
+      const prev = i > 0 ? beams[i-1].colorId : null;
+
+      // Candidate colors: avoid repeating neighbour
+      let candidates = colors.map(c => c.id).filter(id => id !== prev);
+      if (candidates.length === 0) candidates = colors.map(c => c.id);
+
+      // Score: prefer globally under-represented, then locally under-represented
+      // Add small random noise to break ties differently each run
+      candidates.sort((a, b) => {
+        const gA = globalUsage[a][sz], gB = globalUsage[b][sz];
+        if (gA !== gB) return gA - gB;
+        const lA = localUsage[a][sz], lB = localUsage[b][sz];
+        if (lA !== lB) return lA - lB;
+        return Math.random() - 0.5;
+      });
+
+      // Pick among all candidates sharing the same minimum global+local score
+      const minG = globalUsage[candidates[0]][sz];
+      const minL = localUsage[candidates[0]][sz];
+      const tied = candidates.filter(id =>
+        globalUsage[id][sz] === minG && localUsage[id][sz] === minL
+      );
+      const chosen = tied[Math.floor(Math.random() * tied.length)];
+
+      beams.push({ colorId: chosen, size: sz });
+      localUsage[chosen][sz]++;
+      globalUsage[chosen][sz]++;
+    }
+
+    tables.push({ id: t + 1, beams, localUsage });
+  }
+
+  renderResults(tables, colors, sizeAName, sizeBName);
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+function renderResults(tables, colors, sizeAName, sizeBName) {
+  document.getElementById('empty-state').style.display = 'none';
+  const el = document.getElementById('results');
+  el.style.display = 'block';
+
+  const colorMap = Object.fromEntries(colors.map(c => [c.id, c]));
+  const totalBeams = tables[0]?.beams.length ?? 0;
+
+  // Build color totals across all tables
+  const globalTotals = {};
+  colors.forEach(c => { globalTotals[c.id] = 0; });
+  tables.forEach(t => t.beams.forEach(b => globalTotals[b.colorId]++));
+  const maxTotal = Math.max(...Object.values(globalTotals));
+
+  // Wide = size A (even index), Narrow = size B (odd index)
+  const wideUnit   = 3;
+  const narrowUnit = 2;
+  const totalUnits = tables[0]?.beams.reduce((s, b) => s + (b.size==='A' ? wideUnit : narrowUnit), 0) ?? 1;
+
+  let html = `
+    <div class="results-header">
+      <h2>${tables.length} tables · ${totalBeams} beams each</h2>
+      <div class="top-actions">
+        <button class="btn-sm" onclick="generate()">↺ Regenerate</button>
+        <button class="btn-sm" onclick="window.print()">Print / Export</button>
+      </div>
+    </div>
+    <div class="tables-grid">
+  `;
+
+  tables.forEach(table => {
+    // Per-table color count
+    const tableCounts = {};
+    colors.forEach(c => { tableCounts[c.id] = 0; });
+    table.beams.forEach(b => tableCounts[b.colorId]++);
+
+    const pills = colors.map(c => {
+      const clr = colorMap[c.id];
+      return `<span class="stat-pill">
+        <span class="stat-dot" style="background:${clr.hex}"></span>
+        ${clr.name}: ${tableCounts[c.id]}
+      </span>`;
+    }).join('');
+
+    const beamsHtml = table.beams.map((b, i) => {
+      const clr  = colorMap[b.colorId];
+      const flex = b.size === 'A' ? wideUnit : narrowUnit;
+      const tip  = `#${i+1} · ${b.size==='A' ? sizeAName : sizeBName} · ${clr.name}`;
+      return `<div class="beam" style="flex:${flex};background:${clr.hex};" data-tip="${tip}"></div>`;
+    }).join('');
+
+    html += `
+      <div class="table-card">
+        <div class="table-card-header">
+          <span class="table-label">Table ${table.id}</span>
+          <div class="table-stats">${pills}</div>
+        </div>
+        <div class="table-visual">
+          <div class="beam-row">${beamsHtml}</div>
+          <div class="legend" style="margin-top:10px;">
+            <div class="legend-item">
+              <div class="legend-beam" style="width:20px;background:#ccc;"></div>
+              ${sizeAName} (even positions)
+            </div>
+            <div class="legend-item">
+              <div class="legend-beam" style="width:13px;background:#ccc;"></div>
+              ${sizeBName} (odd positions)
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  // ── Per-size overview tables ──────────────────────────────────────────────
+  // Compute counts: sizeCounts[sz][colorId][tableIdx]
+  const sizeCounts = { A: {}, B: {} };
+  colors.forEach(c => {
+    sizeCounts.A[c.id] = Array(tables.length).fill(0);
+    sizeCounts.B[c.id] = Array(tables.length).fill(0);
+  });
+  tables.forEach((t, ti) => t.beams.forEach(b => sizeCounts[b.size][b.colorId][ti]++));
+
+  function sizeTotal(sz, colorId) {
+    return sizeCounts[sz][colorId].reduce((s, v) => s + v, 0);
+  }
+  function colTotal(sz, ti) {
+    return colors.reduce((s, c) => s + sizeCounts[sz][c.id][ti], 0);
+  }
+  const grandTotal = { A: colors.reduce((s,c) => s + sizeTotal('A',c.id), 0),
+                       B: colors.reduce((s,c) => s + sizeTotal('B',c.id), 0) };
+
+  function buildSizeTable(sz, szName) {
+    const maxInSize = Math.max(...colors.map(c => sizeTotal(sz, c.id))) || 1;
+    const tableHeaders = tables.map(t => `<th>T${t.id}</th>`).join('');
+    const rows = colors.map(c => {
+      const total = sizeTotal(sz, c.id);
+      const pct   = Math.round(total / maxInSize * 100);
+      const cells = tables.map((_, ti) => {
+        const v = sizeCounts[sz][c.id][ti];
+        return `<td>${v}</td>`;
+      }).join('');
+      return `
+        <tr>
+          <td class="color-col" style="display:table-cell;">
+            <span class="ov-swatch" style="background:${c.hex};"></span>${c.name}
+          </td>
+          ${cells}
+          <td class="total-col ov-bar-cell">
+            ${total}
+            <div class="ov-mini-bar-bg"><div class="ov-mini-bar" style="width:${pct}%;background:${c.hex};"></div></div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const colTotals = tables.map((_,ti) => `<td>${colTotal(sz,ti)}</td>`).join('');
+
+    return `
+      <div class="overview-size-card">
+        <div class="overview-size-title">${szName}</div>
+        <table class="ov-table">
+          <thead>
+            <tr>
+              <th class="color-col">Color</th>
+              ${tableHeaders}
+              <th class="total-col">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+            <tr class="total-row">
+              <td style="text-align:left;font-weight:700;">Total</td>
+              ${colTotals}
+              <td class="total-col">${grandTotal[sz]}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  html += `
+    <div class="overview-block">
+      <h3>Beams per size, color &amp; table</h3>
+      <div class="overview-wrap">
+        ${buildSizeTable('A', sizeAName + ' (size A)')}
+        ${buildSizeTable('B', sizeBName + ' (size B)')}
+      </div>
+    </div>`;
+
+  // ── Global color totals ───────────────────────────────────────────────────
+  html += `
+    <div id="stats-section">
+      <h3 style="margin-top:28px;">Overall color totals</h3>
+      <div class="stats-grid">
+  `;
+
+  colors.forEach(c => {
+    const total = globalTotals[c.id];
+    const cntA  = sizeTotal('A', c.id);
+    const cntB  = sizeTotal('B', c.id);
+    const pct   = Math.round(total / maxTotal * 100);
+    html += `
+      <div class="stats-card">
+        <div class="stats-card-title" style="color:${c.hex}">■ ${c.name}</div>
+        <div class="color-stat-bar-bg">
+          <div class="color-stat-bar" style="width:${pct}%;background:${c.hex};"></div>
+        </div>
+        <div style="font-size:0.78rem;color:#666;margin-top:4px;">
+          ${total} beams &nbsp;·&nbsp; ${sizeAName}: <strong>${cntA}</strong> &nbsp;·&nbsp; ${sizeBName}: <strong>${cntB}</strong>
+        </div>
+        <div style="margin-top:8px;">
+          ${tables.map(t => {
+            const cnt = t.beams.filter(b => b.colorId === c.id).length;
+            return `<span style="font-size:0.72rem;color:#888;">T${t.id}:&nbsp;<strong style="color:#333;">${cnt}</strong>&nbsp;&nbsp;</span>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+
+  el.innerHTML = html;
+}
+
+// ── Start ──────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
